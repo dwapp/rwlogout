@@ -1,10 +1,14 @@
 use glib::clone;
 use gtk::glib;
 use gtk::prelude::*;
+extern crate system_shutdown;
+use system_shutdown::logout;
+use system_shutdown::shutdown;
+
 
 fn main() {
     let application = gtk::Application::new(
-        Some("com.github.gtk-rs.examples.grid-packing"),
+        Some("com.github.rew-shutdown"),
         Default::default(),
     );
 
@@ -13,9 +17,8 @@ fn main() {
 }
 
 fn build_ui(application: &gtk::Application) {
-    // Create a new window, set its title and default size
     let window = gtk::ApplicationWindow::new(application);
-    window.set_title(Some("Grid Packing"));
+    window.set_title(Some("shutdown"));
     window.set_default_size(200, 120);
 
     // Here we construct the grid that is going contain our buttons.
@@ -34,14 +37,20 @@ fn build_ui(application: &gtk::Application) {
     window.set_child(Some(&grid));
 
     // Create the first button and put it into the grid at (0, 0)
-    let button_1 = gtk::Button::with_label("Button 1");
-    button_1.connect_clicked(move |_| println!("Hello World"));
+    let button_1 = gtk::Button::with_label("logout");
+    button_1.connect_clicked(move |_| match logout() {
+        Ok(_) => println!("Logout, bye!"),
+        Err(error) => eprintln!("Failed to logout: {}", error),
+    });
 
     grid.attach(&button_1, 0, 0, 1, 1);
 
     // Create the second button and put it into the grid at (1, 0)
-    let button_2 = gtk::Button::with_label("Button 2");
-    button_2.connect_clicked(move |_| println!("Hello World"));
+    let button_2 = gtk::Button::with_label("shutdown");
+    button_2.connect_clicked(move |_|  match shutdown() {
+        Ok(_) => println!("Shutting down, bye!"),
+        Err(error) => eprintln!("Failed to shut down: {}", error),
+    });
 
     grid.attach(&button_2, 1, 0, 1, 1);
 
