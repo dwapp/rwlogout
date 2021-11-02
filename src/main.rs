@@ -4,6 +4,8 @@ use gtk::prelude::*;
 extern crate system_shutdown;
 use system_shutdown::logout;
 use system_shutdown::shutdown;
+use system_shutdown::reboot;
+//use system_shutdown::force_logout;
 
 
 fn main() {
@@ -36,7 +38,6 @@ fn build_ui(application: &gtk::Application) {
     // Add the grid in the window
     window.set_child(Some(&grid));
 
-    // Create the first button and put it into the grid at (0, 0)
     let button_1 = gtk::Button::with_label("logout");
     button_1.connect_clicked(move |_| match logout() {
         Ok(_) => println!("Logout, bye!"),
@@ -45,7 +46,6 @@ fn build_ui(application: &gtk::Application) {
 
     grid.attach(&button_1, 0, 0, 1, 1);
 
-    // Create the second button and put it into the grid at (1, 0)
     let button_2 = gtk::Button::with_label("shutdown");
     button_2.connect_clicked(move |_|  match shutdown() {
         Ok(_) => println!("Shutting down, bye!"),
@@ -53,6 +53,15 @@ fn build_ui(application: &gtk::Application) {
     });
 
     grid.attach(&button_2, 1, 0, 1, 1);
+
+    let button_3 = gtk::Button::with_label("reboot");
+    button_3.connect_clicked(move |_|  match reboot() {
+        Ok(_) => println!("reboot, bye!"),
+        Err(error) => eprintln!("Failed to reboot: {}", error),
+    });
+
+    grid.attach(&button_3, 2, 0, 1, 1);
+    
 
     // Create the quit button and put it into the grid at (0, 1)
     let quit_button = gtk::Button::with_label("Quit");
