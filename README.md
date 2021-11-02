@@ -7,7 +7,7 @@ rew-down is a software to help wm users shut down.
 ## BUILD
 
 ```bash
-nix-zsh -p glib.dev pkg-config zlib cargo pango gdk-pixbuf gtk4 
+nix-shell -p glib.dev pkg-config zlib cargo pango gdk-pixbuf gtk4 
 cargo run
 ```
 
