@@ -6,11 +6,10 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.inputs.flake-utils.follows = "flake-utils";
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable-small";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
   };
 
   outputs = { self, nixpkgs, cargo2nix, flake-utils, rust-overlay, ... }:
-
     # Build the output set for each default system and map system sets into
     # attributes, resulting in paths such as:
     # nix build .#packages.x86_64-linux.<name>
@@ -33,11 +32,10 @@
           packageFun = import ./Cargo.nix;
         };
 
-        shell = ./shell.nix;
-
       in rec {
         # this is the output (recursive) set (expressed for each system)
 
+        devShell = import ./shell.nix { inherit pkgs; };
         # the packages in `nix build .#packages.<system>.<name>`
         packages = {
           # nix build .#hello-world
