@@ -40,7 +40,7 @@
         packages = {
           # nix build .#hello-world
           # nix build .#packages.x86_64-linux.hello-world
-          rew-shutdown = (rustPkgs.workspace.rew-shutdown {}).bin;
+          rew-shutdown = (rustPkgs.workspace.rew-down {}).bin;
         };
 
         # nix build
