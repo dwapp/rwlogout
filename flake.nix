@@ -33,6 +33,8 @@
           packageFun = import ./Cargo.nix;
         };
 
+        shell = ./shell.nix;
+
       in rec {
         # this is the output (recursive) set (expressed for each system)
 
