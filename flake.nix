@@ -30,6 +30,65 @@
         rustPkgs = pkgs.rustBuilder.makePackageSet' {
           rustChannel = "1.56.1";
           packageFun = import ./Cargo.nix;
+
+          # Use the existing all list of overrides and append your override
+          packageOverrides = pkgs: pkgs.rustBuilder.overrides.all ++ [
+            # parentheses disambiguate each makeOverride call as a single list element
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "glib-sys";
+              overrideAttrs = drv: {
+                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                  pkgs.glib.dev
+                ];
+              };
+            })
+
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "cairo-sys-rs";
+              overrideAttrs = drv: {
+                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                  pkgs.cairo.dev
+                ];
+              };
+            })
+
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "graphene-sys";
+              overrideAttrs = drv: {
+                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                  pkgs.graphene
+                ];
+              };
+            })
+
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "pango-sys";
+              overrideAttrs = drv: {
+                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                  pkgs.pango.dev
+                ];
+              };
+            })
+
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "gdk-pixbuf-sys";
+              overrideAttrs = drv: {
+                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                  pkgs.gdk_pixbuf.dev
+                ];
+              };
+            })
+
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "gdk4-sys";
+              overrideAttrs = drv: {
+                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
+                  pkgs.gtk4.dev
+                ];
+              };
+            })
+            
+          ];
         };
 
       in rec {
