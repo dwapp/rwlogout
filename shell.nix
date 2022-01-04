@@ -1,12 +1,14 @@
 {pkgs ? import <nixpkgs> {}}:
 pkgs.mkShell {
+  nativeBuildInputs = [ pkgs.cargo ];
   buildInputs = with pkgs; [
-    glib.dev
+    glib
     pkg-config
     zlib
-    cargo
     pango
     gdk-pixbuf
-    gtk4 
+    gtk4
+
+    rust-analyzer
   ];
 }
