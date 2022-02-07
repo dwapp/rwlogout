@@ -9,6 +9,8 @@ pkgs.mkShell {
     gdk-pixbuf
     gtk4
 
+    rustc
+    rustup
     rust-analyzer
   ];
 }

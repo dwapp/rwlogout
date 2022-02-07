@@ -1,11 +1,14 @@
+use std::io::ErrorKind;
+use std::process::Command;
+
 use glib::clone;
 use gtk::glib;
 use gtk::prelude::*;
 extern crate system_shutdown;
-use system_shutdown::logout;
-use system_shutdown::shutdown;
-use system_shutdown::reboot;
-//use system_shutdown::force_logout;
+use system_shutdown::ShutdownResult;
+use system_shutdown::{shutdown, reboot};
+
+use std::io::Error;
 
 
 fn main() {
@@ -16,6 +19,22 @@ fn main() {
 
     application.connect_activate(build_ui);
     application.run();
+}
+
+pub fn logout() -> ShutdownResult {
+    let mut cmd = Command::new("loginctl terminate-session $XDG_SESSION_ID");
+    match cmd.output() {
+        Ok(output) => {
+            if output.status.success() && output.stderr.is_empty() {
+                return Ok(());
+            }
+            Err(Error::new(
+                ErrorKind::Other,
+                String::from_utf8(output.stderr).unwrap(),
+            ))
+        }
+        Err(error) => Err(error),
+    }
 }
 
 fn build_ui(application: &gtk::Application) {
