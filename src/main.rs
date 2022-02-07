@@ -1,14 +1,16 @@
-use std::io::ErrorKind;
+use std::io::{ Error, ErrorKind};
 use std::process::Command;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::prelude::*;
 
 use glib::clone;
+use gtk::gdk_pixbuf::ffi::GdkPixbufLoader;
 use gtk::glib;
 use gtk::prelude::*;
 extern crate system_shutdown;
 use system_shutdown::ShutdownResult;
 use system_shutdown::{shutdown, reboot};
-
-use std::io::Error;
 
 
 fn main() {
@@ -21,8 +23,14 @@ fn main() {
     application.run();
 }
 
-pub fn logout() -> ShutdownResult {
-    let mut cmd = Command::new("loginctl terminate-session $XDG_SESSION_ID");
+pub fn rew_logout() -> ShutdownResult {
+    let file = File::open("/proc/self/sessionid")?;
+    let mut buffered = BufReader::new(file);
+    let mut buf = String::new();
+    let sessionid = buffered.read_line(&mut buf)?;
+    println!("id:{}", sessionid);
+    let mut cmd = Command::new("loginctl");
+    cmd.arg("terminate-session").arg(buf);
     match cmd.output() {
         Ok(output) => {
             if output.status.success() && output.stderr.is_empty() {
@@ -58,7 +66,7 @@ fn build_ui(application: &gtk::Application) {
     window.set_child(Some(&grid));
 
     let button_1 = gtk::Button::with_label("logout");
-    button_1.connect_clicked(move |_| match logout() {
+    button_1.connect_clicked(move |_| match rew_logout() {
         Ok(_) => println!("Logout, bye!"),
         Err(error) => eprintln!("Failed to logout: {}", error),
     });
