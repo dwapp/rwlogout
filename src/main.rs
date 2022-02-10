@@ -26,11 +26,10 @@ fn main() {
 pub fn rew_logout() -> ShutdownResult {
     let file = File::open("/proc/self/sessionid")?;
     let mut buffered = BufReader::new(file);
-    let mut buf = String::new();
-    let sessionid = buffered.read_line(&mut buf)?;
-    println!("id:{}", sessionid);
+    let mut sessionid = String::new();
+    buffered.read_line(&mut sessionid)?;
     let mut cmd = Command::new("loginctl");
-    cmd.arg("terminate-session").arg(buf);
+    cmd.arg("terminate-session").arg(sessionid);
     match cmd.output() {
         Ok(output) => {
             if output.status.success() && output.stderr.is_empty() {
@@ -43,6 +42,10 @@ pub fn rew_logout() -> ShutdownResult {
         }
         Err(error) => Err(error),
     }
+}
+
+pub fn rew_hibernate() -> ShutdownResult {
+
 }
 
 fn build_ui(application: &gtk::Application) {
