@@ -40,13 +40,13 @@ pub fn rew_logout() -> ShutdownResult {
     }
 }
 
-pub fn rew_hibernate() -> ShutdownResult {
+fn dbus_send(singnal :&str) -> ShutdownResult {
     let mut cmd = Command::new("dbus-send");
     cmd.arg("--system")
         .arg("--print-reply")
         .arg("--dest=org.freedesktop.login1")
         .arg("/org/freedesktop/login1")
-        .arg("org.freedesktop.login1.Manager.Suspend")
+        .arg("org.freedesktop.login1.Manager.".to_owned() + singnal)
         .arg("boolean:true");
     match cmd.output() {
         Ok(output) => {
@@ -60,6 +60,14 @@ pub fn rew_hibernate() -> ShutdownResult {
         }
         Err(error) => Err(error),
     }
+}
+
+pub fn rew_hibernate() -> ShutdownResult {
+    dbus_send("Hibernate")
+}
+
+pub fn rew_suspend() -> ShutdownResult {
+    dbus_send("Suspend")
 }
 
 fn build_ui(application: &gtk::Application) {
@@ -112,6 +120,13 @@ fn build_ui(application: &gtk::Application) {
         Err(error) => eprintln!("Failed to hibernate: {}", error),
     });
     grid.attach(&button_hibernate, 3, 0, 1, 1);
+
+    let button_suspend = gtk::Button::with_label("suspend");
+    button_suspend.connect_clicked(move |_| match rew_suspend() {
+        Ok(_) => println!("Suspend, bye!"),
+        Err(error) => eprintln!("Failed to Suspend: {}", error),
+    });
+    grid.attach(&button_suspend, 4, 0, 1, 1);
 
     // Create the quit button and put it into the grid at (0, 1)
     let quit_button = gtk::Button::with_label("Quit");
