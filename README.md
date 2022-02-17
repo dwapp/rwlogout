@@ -8,18 +8,25 @@ rew-down is a software to help wm users shut down.
 
 ## BUILD
 
+Use Cargo:
+
 ```bash
 nix-shell -p glib.dev pkg-config zlib cargo pango gdk-pixbuf gtk4 
 cargo run
+```
+Use Nix:
+
+```
+nix build --no-update-lock-file
 ```
 
 ## TODO
 
 - [x] shutdown   关机
-- [ ] logout     注销
+- [x] logout     注销
 - [x] reboot     重启
-- [ ] hibernate  休眠 
-- [ ] sleep      睡眠
+- [x] hibernate  休眠 
+- [x] sleep      睡眠
 - [ ] optimize GUI
 - [ ] systemd unit
 
