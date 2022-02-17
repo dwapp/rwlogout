@@ -1,10 +1,13 @@
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::{Error, ErrorKind};
+use std::net::Shutdown;
 use std::process::Command;
 
 use glib::clone;
+use gtk::gdk::keys::constants::W;
 use gtk::gdk_pixbuf::ffi::GdkPixbufLoader;
 use gtk::glib;
 use gtk::prelude::*;
@@ -40,14 +43,14 @@ pub fn rew_logout() -> ShutdownResult {
     }
 }
 
-fn dbus_send(singnal :&str) -> ShutdownResult {
+fn dbus_send(singnal :&str, context :&str) -> ShutdownResult {
     let mut cmd = Command::new("dbus-send");
     cmd.arg("--system")
         .arg("--print-reply")
         .arg("--dest=org.freedesktop.login1")
         .arg("/org/freedesktop/login1")
         .arg("org.freedesktop.login1.Manager.".to_owned() + singnal)
-        .arg("boolean:true");
+        .arg(context);
     match cmd.output() {
         Ok(output) => {
             if output.status.success() && output.stderr.is_empty() {
@@ -63,11 +66,21 @@ fn dbus_send(singnal :&str) -> ShutdownResult {
 }
 
 pub fn rew_hibernate() -> ShutdownResult {
-    dbus_send("Hibernate")
+    dbus_send("Hibernate", "boolean:true")
 }
 
 pub fn rew_suspend() -> ShutdownResult {
-    dbus_send("Suspend")
+    dbus_send("Suspend", "boolean:true")
+}
+
+pub fn rew_lock() -> ShutdownResult {
+    let file = File::open("/proc/self/sessionid")?;
+    let mut buffered = BufReader::new(file);
+    let mut sessionid = String::new();
+    buffered.read_line(&mut sessionid)?;
+    let mut context = String::from("string:");
+    context.push_str(&sessionid);
+    dbus_send("LockSession", context.as_str())
 }
 
 fn build_ui(application: &gtk::Application) {
@@ -127,6 +140,13 @@ fn build_ui(application: &gtk::Application) {
         Err(error) => eprintln!("Failed to Suspend: {}", error),
     });
     grid.attach(&button_suspend, 4, 0, 1, 1);
+
+    let button_lock = gtk::Button::with_label("lock");
+    button_lock.connect_clicked(move |_| match rew_lock() {
+        Ok(_) => println!("Lock,bye!"),
+        Err(error) => eprintln!("Failed to Lock: {}", error),
+    });
+    grid.attach(&button_lock, 5, 0, 1, 1);
 
     // Create the quit button and put it into the grid at (0, 1)
     let quit_button = gtk::Button::with_label("Quit");
