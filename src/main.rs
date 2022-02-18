@@ -1,85 +1,15 @@
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
-use std::io::{Error, ErrorKind};
-use std::process::Command;
-
 use glib::clone;
 use gtk::glib;
 use gtk::prelude::*;
 extern crate system_shutdown;
-use system_shutdown::ShutdownResult;
 use system_shutdown::{reboot, shutdown};
+use rew_down::{logout, lock, hibernate, suspend};
 
 fn main() {
     let application = gtk::Application::new(Some("com.github.rew-shutdown"), Default::default());
 
     application.connect_activate(build_ui);
     application.run();
-}
-
-pub fn get_sessionid() -> Result<String , Box<dyn std::error::Error>> {
-    let file = File::open("/proc/self/sessionid")?;
-    let mut buffered = BufReader::new(file);
-    let mut sessionid = String::new();
-    buffered.read_line(&mut sessionid)?;
-    Ok(sessionid)
-}
-
-pub fn rew_logout() -> ShutdownResult {
-    let sessionid = get_sessionid().unwrap();
-    let mut cmd = Command::new("loginctl");
-    cmd.arg("terminate-session").arg(sessionid);
-    match cmd.output() {
-        Ok(output) => {
-            if output.status.success() && output.stderr.is_empty() {
-                return Ok(());
-            }
-            Err(Error::new(
-                ErrorKind::Other,
-                String::from_utf8(output.stderr).unwrap(),
-            ))
-        }
-        Err(error) => Err(error),
-    }
-}
-
-fn dbus_send(singnal :&str, context :&str) -> ShutdownResult {
-    let mut cmd = Command::new("dbus-send");
-    cmd.arg("--system")
-        .arg("--print-reply")
-        .arg("--dest=org.freedesktop.login1")
-        .arg("/org/freedesktop/login1")
-        .arg("org.freedesktop.login1.Manager.".to_owned() + singnal)
-        .arg(context);
-    match cmd.output() {
-        Ok(output) => {
-            if output.status.success() && output.stderr.is_empty() {
-                return Ok(());
-            }
-            Err(Error::new(
-                ErrorKind::Other,
-                String::from_utf8(output.stderr).unwrap(),
-            ))
-        }
-        Err(error) => Err(error),
-    }
-}
-
-pub fn rew_hibernate() -> ShutdownResult {
-    dbus_send("Hibernate", "boolean:true")
-}
-
-pub fn rew_suspend() -> ShutdownResult {
-    dbus_send("Suspend", "boolean:true")
-}
-
-
-pub fn rew_lock() -> ShutdownResult {
-    let sessionid = get_sessionid().unwrap();
-    let mut context = String::from("string:");
-    context.push_str(&sessionid);
-    dbus_send("LockSession", context.as_str())
 }
 
 fn build_ui(application: &gtk::Application) {
@@ -103,7 +33,7 @@ fn build_ui(application: &gtk::Application) {
     window.set_child(Some(&grid));
 
     let button_logout = gtk::Button::with_label("logout");
-    button_logout.connect_clicked(move |_| match rew_logout() {
+    button_logout.connect_clicked(move |_| match logout() {
         Ok(_) => println!("Logout, bye!"),
         Err(error) => eprintln!("Failed to logout: {}", error),
     });
@@ -127,21 +57,21 @@ fn build_ui(application: &gtk::Application) {
     grid.attach(&button_reboot, 2, 0, 1, 1);
 
     let button_hibernate = gtk::Button::with_label("hibernate");
-    button_hibernate.connect_clicked(move |_| match rew_hibernate() {
+    button_hibernate.connect_clicked(move |_| match hibernate() {
         Ok(_) => println!("Hibernate, bye!"),
         Err(error) => eprintln!("Failed to hibernate: {}", error),
     });
     grid.attach(&button_hibernate, 3, 0, 1, 1);
 
     let button_suspend = gtk::Button::with_label("suspend");
-    button_suspend.connect_clicked(move |_| match rew_suspend() {
+    button_suspend.connect_clicked(move |_| match suspend() {
         Ok(_) => println!("Suspend, bye!"),
         Err(error) => eprintln!("Failed to Suspend: {}", error),
     });
     grid.attach(&button_suspend, 4, 0, 1, 1);
 
     let button_lock = gtk::Button::with_label("lock");
-    button_lock.connect_clicked(move |_| match rew_lock() {
+    button_lock.connect_clicked(move |_| match lock() {
         Ok(_) => println!("Lock,bye!"),
         Err(error) => eprintln!("Failed to Lock: {}", error),
     });
