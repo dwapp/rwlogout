@@ -2,8 +2,7 @@ use glib::clone;
 use gtk::glib;
 use gtk::prelude::*;
 extern crate system_shutdown;
-use system_shutdown::{reboot, shutdown};
-use rew_down::{logout, lock, hibernate, suspend};
+use rew_down::{logout, lock, hibernate, suspend, reboot, shutdown};
 
 fn main() {
     let application = gtk::Application::new(Some("com.github.rew-shutdown"), Default::default());

@@ -7,7 +7,7 @@ use std::process::Command;
 extern crate system_shutdown;
 use system_shutdown::ShutdownResult;
 
-pub fn get_sessionid() -> Result<String , Box<dyn std::error::Error>> {
+fn get_sessionid() -> Result<String, Box<dyn std::error::Error>> {
     let file = File::open("/proc/self/sessionid")?;
     let mut buffered = BufReader::new(file);
     let mut sessionid = String::new();
@@ -15,10 +15,14 @@ pub fn get_sessionid() -> Result<String , Box<dyn std::error::Error>> {
     Ok(sessionid)
 }
 
-pub fn logout() -> ShutdownResult {
-    let sessionid = get_sessionid().unwrap();
-    let mut cmd = Command::new("loginctl");
-    cmd.arg("terminate-session").arg(sessionid);
+fn dbus_send(singnal: &str, context: &str) -> ShutdownResult {
+    let mut cmd = Command::new("dbus-send");
+    cmd.arg("--system")
+        .arg("--print-reply")
+        .arg("--dest=org.freedesktop.login1")
+        .arg("/org/freedesktop/login1")
+        .arg("org.freedesktop.login1.Manager.".to_owned() + singnal)
+        .arg(context);
     match cmd.output() {
         Ok(output) => {
             if output.status.success() && output.stderr.is_empty() {
@@ -33,14 +37,10 @@ pub fn logout() -> ShutdownResult {
     }
 }
 
-fn dbus_send(singnal :&str, context :&str) -> ShutdownResult {
-    let mut cmd = Command::new("dbus-send");
-    cmd.arg("--system")
-        .arg("--print-reply")
-        .arg("--dest=org.freedesktop.login1")
-        .arg("/org/freedesktop/login1")
-        .arg("org.freedesktop.login1.Manager.".to_owned() + singnal)
-        .arg(context);
+pub fn logout() -> ShutdownResult {
+    let sessionid = get_sessionid().unwrap();
+    let mut cmd = Command::new("loginctl");
+    cmd.arg("terminate-session").arg(sessionid);
     match cmd.output() {
         Ok(output) => {
             if output.status.success() && output.stderr.is_empty() {
@@ -63,10 +63,18 @@ pub fn suspend() -> ShutdownResult {
     dbus_send("Suspend", "boolean:true")
 }
 
-
 pub fn lock() -> ShutdownResult {
     let sessionid = get_sessionid().unwrap();
     let mut context = String::from("string:");
     context.push_str(&sessionid);
     dbus_send("LockSession", context.as_str())
 }
+
+pub fn shutdown() -> ShutdownResult {
+    dbus_send("PowerOff", "boolean:true")
+}
+
+pub fn reboot() -> ShutdownResult {
+    dbus_send("Reboot", "boolean:true")
+}
+
