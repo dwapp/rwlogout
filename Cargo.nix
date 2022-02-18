@@ -773,7 +773,6 @@ in
     src = fetchCrateLocal workspaceSrc;
     dependencies = {
       gtk = rustPackages."registry+https://github.com/rust-lang/crates.io-index".gtk4."0.2.0" { inherit profileName; };
-      system_shutdown = rustPackages."registry+https://github.com/rust-lang/crates.io-index".system_shutdown."3.0.0" { inherit profileName; };
     };
   });
   

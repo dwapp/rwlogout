@@ -1,7 +1,6 @@
 use glib::clone;
 use gtk::glib;
 use gtk::prelude::*;
-extern crate system_shutdown;
 use rew_down::{logout, lock, hibernate, suspend, reboot, shutdown};
 
 fn main() {

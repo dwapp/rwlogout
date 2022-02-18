@@ -1,11 +1,11 @@
 use std::fs::File;
+use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::{Error, ErrorKind};
 use std::process::Command;
 
-extern crate system_shutdown;
-use system_shutdown::ShutdownResult;
+pub type ShutdownResult = io::Result<()>;
 
 fn get_sessionid() -> Result<String, Box<dyn std::error::Error>> {
     let file = File::open("/proc/self/sessionid")?;
