@@ -1,14 +1,10 @@
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::{Error, ErrorKind};
-use std::net::Shutdown;
 use std::process::Command;
 
 use glib::clone;
-use gtk::gdk::keys::constants::W;
-use gtk::gdk_pixbuf::ffi::GdkPixbufLoader;
 use gtk::glib;
 use gtk::prelude::*;
 extern crate system_shutdown;
@@ -22,11 +18,16 @@ fn main() {
     application.run();
 }
 
-pub fn rew_logout() -> ShutdownResult {
+pub fn get_sessionid() -> Result<String , Box<dyn std::error::Error>> {
     let file = File::open("/proc/self/sessionid")?;
     let mut buffered = BufReader::new(file);
     let mut sessionid = String::new();
     buffered.read_line(&mut sessionid)?;
+    Ok(sessionid)
+}
+
+pub fn rew_logout() -> ShutdownResult {
+    let sessionid = get_sessionid().unwrap();
     let mut cmd = Command::new("loginctl");
     cmd.arg("terminate-session").arg(sessionid);
     match cmd.output() {
@@ -73,11 +74,9 @@ pub fn rew_suspend() -> ShutdownResult {
     dbus_send("Suspend", "boolean:true")
 }
 
+
 pub fn rew_lock() -> ShutdownResult {
-    let file = File::open("/proc/self/sessionid")?;
-    let mut buffered = BufReader::new(file);
-    let mut sessionid = String::new();
-    buffered.read_line(&mut sessionid)?;
+    let sessionid = get_sessionid().unwrap();
     let mut context = String::from("string:");
     context.push_str(&sessionid);
     dbus_send("LockSession", context.as_str())
