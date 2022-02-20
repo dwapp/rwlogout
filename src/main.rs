@@ -3,6 +3,9 @@ use gtk::glib;
 use gtk::prelude::*;
 use rew_down::{logout, lock, hibernate, suspend, reboot, shutdown};
 
+mod ex_button;
+use ex_button::ExButton;
+
 fn main() {
     let application = gtk::Application::new(Some("com.github.rew-shutdown"), Default::default());
 
@@ -26,6 +29,8 @@ fn build_ui(application: &gtk::Application) {
         .row_spacing(6)
         .column_spacing(6)
         .build();
+
+    let button = ExButton::new();
 
     // Add the grid in the window
     window.set_child(Some(&grid));
