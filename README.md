@@ -3,8 +3,6 @@
 
 rew-down is a software to help wm users shut down.
 
-!! *Not completed, it is not recommended to use it now* !!
-
 
 ## BUILD
 
