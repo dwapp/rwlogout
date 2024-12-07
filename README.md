@@ -3,7 +3,6 @@
 
 rew-down is a software to help wm users shut down.
 
-
 ## BUILD
 
 Use Cargo:
@@ -20,11 +19,11 @@ nix build --no-update-lock-file
 
 ## TODO
 
-- [x] shutdown   关机
-- [x] logout     注销
-- [x] reboot     重启
-- [x] hibernate  休眠 
-- [x] sleep      睡眠
+- [x] shutdown
+- [x] logout
+- [x] reboot
+- [x] hibernate
+- [x] sleep
 - [ ] optimize GUI
 - [ ] systemd unit
 

@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install linux dependencies
-      run: sudo apt install -y libglib2.0-dev zlib1g-dev libpango1.0-dev libgtk-4-dev libgdk-pixbuf2.0-dev
+      run: sudo apt install -y libglib2.0-dev zlib1g-dev libpango1.0-dev libgtk-4-dev libgdk-pixbuf2.0-dev libgtk4-layer-shell-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests

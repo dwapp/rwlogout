@@ -42,6 +42,7 @@ rec {
             pango
             gdk-pixbuf
             gtk4
+            gtk4-layer-shell
           ];
 
           CFG_RELEASE = "git-${rev}";

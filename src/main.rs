@@ -1,7 +1,8 @@
 use glib::clone;
-use gtk::{gdk,glib,Application,CssProvider};
 use gtk::prelude::*;
-use rew_down::{logout, lock, hibernate, suspend, reboot, shutdown};
+use gtk::{gdk, glib, Application, CssProvider};
+use gtk4_layer_shell::{Edge, Layer, LayerShell, KeyboardMode};
+use rew_down::{hibernate, lock, logout, reboot, shutdown, suspend};
 
 const APP_ID: &str = "com.github.rew-shutdown";
 
@@ -23,6 +24,22 @@ fn load_css() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+}
+
+fn set_fullscreen(window: &gtk::ApplicationWindow) {
+    if gtk4_layer_shell::is_supported() {
+        window.init_layer_shell();
+        window.set_layer(Layer::Overlay);
+        window.set_namespace("logout_dialog");
+        window.set_keyboard_mode(KeyboardMode::OnDemand);
+        window.set_anchor(Edge::Top, true);
+        window.set_anchor(Edge::Left, true);
+        window.set_anchor(Edge::Bottom, true);
+        window.set_anchor(Edge::Right, true);
+        window.set_exclusive_zone(-1);
+    } else {
+      window.fullscreen();
+    }
 }
 
 fn build_ui(application: &gtk::Application) {
@@ -96,7 +113,7 @@ fn build_ui(application: &gtk::Application) {
 
     grid.attach(&quit_button, 0, 1, 2, 1);
 
-    window.fullscreen();
+    set_fullscreen(&window);
 
     window.present();
 }

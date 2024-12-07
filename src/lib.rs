@@ -77,4 +77,3 @@ pub fn shutdown() -> ShutdownResult {
 pub fn reboot() -> ShutdownResult {
     dbus_send("Reboot", "boolean:true")
 }
-
