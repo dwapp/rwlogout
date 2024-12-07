@@ -10,5 +10,7 @@
 **/*.rs.bk
 
 # nix build result
+# nix
+.direnv/
 result
-result-bin
+result-*
