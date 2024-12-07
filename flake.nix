@@ -71,6 +71,7 @@ rec {
             self.packages.${system}.default
           ];
           RUST_BACKTRACE = "short";
+          RUST_SRC_PATH = "${pkgs.rustPlatform.rustLibSrc}";
           NIXPKGS = nixpkgs;
         };
       }

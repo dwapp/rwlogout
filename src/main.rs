@@ -1,13 +1,28 @@
 use glib::clone;
-use gtk::glib;
+use gtk::{gdk,glib,Application,CssProvider};
 use gtk::prelude::*;
 use rew_down::{logout, lock, hibernate, suspend, reboot, shutdown};
 
-fn main() {
-    let application = gtk::Application::new(Some("com.github.rew-shutdown"), Default::default());
+const APP_ID: &str = "com.github.rew-shutdown";
 
-    application.connect_activate(build_ui);
-    application.run();
+fn main() -> glib::ExitCode {
+    let app = Application::builder().application_id(APP_ID).build();
+    app.connect_startup(|_| load_css());
+    app.connect_activate(build_ui);
+    app.run()
+}
+
+fn load_css() {
+    // Load the CSS file and add it to the provider
+    let provider = CssProvider::new();
+    provider.load_from_data(&String::from_utf8_lossy(include_bytes!("style.css")));
+
+    // Add the provider to the default screen
+    gtk::style_context_add_provider_for_display(
+        &gdk::Display::default().expect("Could not connect to a display."),
+        &provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
 }
 
 fn build_ui(application: &gtk::Application) {
@@ -81,5 +96,7 @@ fn build_ui(application: &gtk::Application) {
 
     grid.attach(&quit_button, 0, 1, 2, 1);
 
-    window.show();
+    window.fullscreen();
+
+    window.present();
 }
