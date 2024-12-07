@@ -1,109 +1,86 @@
-{
+rec {
+  description = "rew-down is a software to help wm users shut down";
+
   inputs = {
-    # Use the github URL for real packages
-    cargo2nix.url = "github:cargo2nix/cargo2nix/master";
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay.url = "github:oxalica/rust-overlay";
-    rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
-    rust-overlay.inputs.flake-utils.follows = "flake-utils";
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
   };
 
-  outputs = { self, nixpkgs, cargo2nix, flake-utils, rust-overlay, ... }:
-    # Build the output set for each default system and map system sets into
-    # attributes, resulting in paths such as:
-    # nix build .#packages.x86_64-linux.<name>
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      flake-utils,
+      nixpkgs,
+    }:
+    let
+      inherit (builtins) substring;
+      inherit (nixpkgs) lib;
 
-      # let-in expressions, very similar to Rust's let bindings.  These names
-      # are used to express the output but not themselves paths in the output.
-      let
+      mtime = self.lastModifiedDate;
+      date = "${substring 0 4 mtime}-${substring 4 2 mtime}-${substring 6 2 mtime}";
+      rev = self.rev or (lib.warn "Git changes are not committed" (self.dirtyRev or "dirty"));
 
-        # create nixpkgs that contains rustBuilder from cargo2nix overlay
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [(import "${cargo2nix}/overlay")
-                      rust-overlay.overlay];
-        };
+      mkPackage =
+        { pkgs }:
+        pkgs.rustPlatform.buildRustPackage {
+          pname = "rew-down";
+          version = "unstable-${date}";
+          src = self;
 
-        # create the workspace & dependencies package set
-        rustPkgs = pkgs.rustBuilder.makePackageSet' {
-          rustChannel = "1.56.1";
-          packageFun = import ./Cargo.nix;
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+            allowBuiltinFetchGit = false;
+          };
 
-          # Use the existing all list of overrides and append your override
-          packageOverrides = pkgs: pkgs.rustBuilder.overrides.all ++ [
-            # parentheses disambiguate each makeOverride call as a single list element
-            (pkgs.rustBuilder.rustLib.makeOverride {
-              name = "glib-sys";
-              overrideAttrs = drv: {
-                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
-                  pkgs.glib.dev
-                ];
-              };
-            })
-
-            (pkgs.rustBuilder.rustLib.makeOverride {
-              name = "cairo-sys-rs";
-              overrideAttrs = drv: {
-                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
-                  pkgs.cairo.dev
-                ];
-              };
-            })
-
-            (pkgs.rustBuilder.rustLib.makeOverride {
-              name = "graphene-sys";
-              overrideAttrs = drv: {
-                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
-                  pkgs.graphene
-                ];
-              };
-            })
-
-            (pkgs.rustBuilder.rustLib.makeOverride {
-              name = "pango-sys";
-              overrideAttrs = drv: {
-                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
-                  pkgs.pango.dev
-                ];
-              };
-            })
-
-            (pkgs.rustBuilder.rustLib.makeOverride {
-              name = "gdk-pixbuf-sys";
-              overrideAttrs = drv: {
-                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
-                  pkgs.gdk_pixbuf.dev
-                ];
-              };
-            })
-
-            (pkgs.rustBuilder.rustLib.makeOverride {
-              name = "gdk4-sys";
-              overrideAttrs = drv: {
-                propagatedNativeBuildInputs = drv.propagatedNativeBuildInputs or [ ] ++ [
-                  pkgs.gtk4.dev
-                ];
-              };
-            })
-            
+          nativeBuildInputs = with pkgs; [
+            pkg-config
           ];
+
+          buildInputs = with pkgs; [
+            glib
+            zlib
+            pango
+            gdk-pixbuf
+            gtk4
+          ];
+
+          CFG_RELEASE = "git-${rev}";
+
+          meta = {
+            homepage = "https://github.com/wineee/rew-shutdown";
+            license = with lib.licenses; [
+              mit
+            ];
+            mainProgram = "rew-shutdown";
+          };
+        };
+    in
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in
+      rec {
+        packages = rec {
+          default = rew-down;
+          rew-down = pkgs.callPackage mkPackage { };
         };
 
-      in rec {
-        # this is the output (recursive) set (expressed for each system)
-
-        devShell = import ./shell.nix { inherit pkgs; };
-        # the packages in `nix build .#packages.<system>.<name>`
-        packages = {
-          # nix build .#hello-world
-          # nix build .#packages.x86_64-linux.hello-world
-          rew-shutdown = (rustPkgs.workspace.rew-down {}).bin;
+        devShells.default = pkgs.mkShell {
+          inputsFrom = [
+            self.packages.${system}.default
+          ];
+          RUST_BACKTRACE = "short";
+          NIXPKGS = nixpkgs;
         };
-
-        # nix build
-        defaultPackage = packages.rew-shutdown;
       }
-    );
+    )
+    // {
+      overlays = {
+        default = self.overlays.rew-down;
+        rew-down = final: prev: {
+          rew-down = final.callPackage mkPackage { };
+        };
+      };
+    };
 }
