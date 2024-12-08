@@ -107,12 +107,6 @@ fn build_ui(application: &gtk::Application) {
     });
     grid.attach(&button_lock, 5, 0, 1, 1);
 
-    // Create the quit button and put it into the grid at (0, 1)
-    let quit_button = gtk::Button::with_label("Quit");
-    quit_button.connect_clicked(clone!(@weak window => move |_| window.destroy()));
-
-    grid.attach(&quit_button, 0, 1, 2, 1);
-
     set_fullscreen(&window);
 
     let key_controller = gtk::EventControllerKey::new();
@@ -123,6 +117,12 @@ fn build_ui(application: &gtk::Application) {
         glib::Propagation::Proceed
     });
     window.add_controller(key_controller);
+
+    let gesture_click = gtk::GestureClick::new();
+    gesture_click.connect_released(move |_, _, _, _| {
+        std::process::exit(0);
+    });
+    window.add_controller(gesture_click);
 
     window.present();
 }
