@@ -1,4 +1,4 @@
-use glib::clone;
+use glib::{clone};
 use gtk::prelude::*;
 use gtk::{gdk, glib, Application, CssProvider};
 use gtk4_layer_shell::{Edge, Layer, LayerShell, KeyboardMode};
@@ -114,6 +114,15 @@ fn build_ui(application: &gtk::Application) {
     grid.attach(&quit_button, 0, 1, 2, 1);
 
     set_fullscreen(&window);
+
+    let key_controller = gtk::EventControllerKey::new();
+    key_controller.connect_key_pressed(move |_, key, _, _| {
+        if key == gdk::Key::Escape {
+            std::process::exit(0);
+        }
+        glib::Propagation::Proceed
+    });
+    window.add_controller(key_controller);
 
     window.present();
 }
