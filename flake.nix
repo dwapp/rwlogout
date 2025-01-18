@@ -1,5 +1,5 @@
 rec {
-  description = "rew-down is a software to help wm users shut down";
+  description = "Yet another logout menu";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
@@ -23,8 +23,8 @@ rec {
       mkPackage =
         { pkgs }:
         pkgs.rustPlatform.buildRustPackage {
-          pname = "rew-down";
-          version = "unstable-${date}";
+          pname = "wlogout2";
+          version = "0-unstable-${date}";
           src = self;
 
           cargoLock = {
@@ -48,11 +48,11 @@ rec {
           CFG_RELEASE = "git-${rev}";
 
           meta = {
-            homepage = "https://github.com/wineee/rew-shutdown";
+            homepage = "https://github.com/dwapp/wlogout2";
             license = with lib.licenses; [
               mit
             ];
-            mainProgram = "rew-shutdown";
+            mainProgram = "wlogout2";
           };
         };
     in
@@ -63,8 +63,8 @@ rec {
       in
       rec {
         packages = rec {
-          default = rew-down;
-          rew-down = pkgs.callPackage mkPackage { };
+          default = wlogout2;
+          wlogout2 = pkgs.callPackage mkPackage { };
         };
 
         devShells.default = pkgs.mkShell {
@@ -79,9 +79,8 @@ rec {
     )
     // {
       overlays = {
-        default = self.overlays.rew-down;
-        rew-down = final: prev: {
-          rew-down = final.callPackage mkPackage { };
+        default = final: prev: {
+          wlogout2 = final.callPackage mkPackage { };
         };
       };
     };

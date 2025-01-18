@@ -2,7 +2,7 @@ use glib::{clone};
 use gtk::prelude::*;
 use gtk::{gdk, glib, Application, CssProvider};
 use gtk4_layer_shell::{Edge, Layer, LayerShell, KeyboardMode};
-use rew_down::{hibernate, lock, logout, reboot, shutdown, suspend};
+use wlogout2::{hibernate, lock, logout, reboot, shutdown, suspend};
 
 const APP_ID: &str = "com.github.rew-shutdown";
 

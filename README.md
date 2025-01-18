@@ -1,7 +1,6 @@
-# rew-down
-[![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
+# wlogouts2
 
-rew-down is a software to help wm users shut down.
+wlougout2 is a software to help wm users shut down.
 
 ## BUILD
 
