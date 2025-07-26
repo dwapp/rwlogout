@@ -48,7 +48,7 @@ rec {
           CFG_RELEASE = "git-${rev}";
 
           meta = {
-            homepage = "https://github.com/dwapp/wlogout2";
+            homepage = "https://github.com/dwapp/rwlogout";
             license = with lib.licenses; [
               mit
             ];
