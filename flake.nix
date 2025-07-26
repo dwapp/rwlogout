@@ -23,7 +23,7 @@ rec {
       mkPackage =
         { pkgs }:
         pkgs.rustPlatform.buildRustPackage {
-          pname = "wlogout2";
+          pname = "rwlogout";
           version = "0-unstable-${date}";
           src = self;
 
@@ -52,7 +52,7 @@ rec {
             license = with lib.licenses; [
               mit
             ];
-            mainProgram = "wlogout2";
+            mainProgram = "rwlogout";
           };
         };
     in
@@ -63,8 +63,8 @@ rec {
       in
       rec {
         packages = rec {
-          default = wlogout2;
-          wlogout2 = pkgs.callPackage mkPackage { };
+          default = rwlogout;
+          rwlogout = pkgs.callPackage mkPackage { };
         };
 
         devShells.default = pkgs.mkShell {
@@ -80,7 +80,7 @@ rec {
     // {
       overlays = {
         default = final: prev: {
-          wlogout2 = final.callPackage mkPackage { };
+          rwlogout = final.callPackage mkPackage { };
         };
       };
     };

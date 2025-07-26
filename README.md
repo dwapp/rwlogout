@@ -1,4 +1,4 @@
-# wlogouts2
+# rwlogouts
 
 wlougout2 is a software to help wm users shut down.
 

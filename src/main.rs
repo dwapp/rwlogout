@@ -2,7 +2,7 @@ use glib::{clone};
 use gtk::prelude::*;
 use gtk::{gdk, glib, Application, CssProvider};
 use gtk4_layer_shell::{Edge, Layer, LayerShell, KeyboardMode};
-use wlogout2::{hibernate, lock, logout, reboot, shutdown, suspend};
+use rwlogout::{hibernate, lock, logout, reboot, shutdown, suspend};
 
 const APP_ID: &str = "com.github.rew-shutdown";
 
@@ -91,21 +91,21 @@ fn build_ui(application: &gtk::Application) {
         Ok(_) => println!("Hibernate, bye!"),
         Err(error) => eprintln!("Failed to hibernate: {}", error),
     });
-    grid.attach(&button_hibernate, 3, 0, 1, 1);
+    grid.attach(&button_hibernate, 0, 1, 1, 1);
 
     let button_suspend = gtk::Button::with_label("suspend");
     button_suspend.connect_clicked(move |_| match suspend() {
         Ok(_) => println!("Suspend, bye!"),
         Err(error) => eprintln!("Failed to Suspend: {}", error),
     });
-    grid.attach(&button_suspend, 4, 0, 1, 1);
+    grid.attach(&button_suspend, 1, 1, 1, 1);
 
     let button_lock = gtk::Button::with_label("lock");
     button_lock.connect_clicked(move |_| match lock() {
         Ok(_) => println!("Lock,bye!"),
         Err(error) => eprintln!("Failed to Lock: {}", error),
     });
-    grid.attach(&button_lock, 5, 0, 1, 1);
+    grid.attach(&button_lock, 2, 1, 1, 1);
 
     set_fullscreen(&window);
 

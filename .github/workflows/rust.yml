@@ -30,7 +30,7 @@ jobs:
           sudo ninja -C build install
           sudo ldconfig
           cd ..
-          cd rew-shutdown 
+          cd wlogout2
     - name: Build
       run: cargo build --verbose
     - name: Run tests
