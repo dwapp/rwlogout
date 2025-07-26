@@ -53,6 +53,16 @@ impl SimpleComponent for App {
         
         // Load configuration
         let config = Config::load_from_kdl().expect("Failed to load configuration");
+        
+        // Debug: print loaded keybinds
+        println!("Loaded keybinds:");
+        for button_config in &config.buttons {
+            println!("  '{}' -> {} ({})", 
+                     button_config.keybind, 
+                     button_config.text, 
+                     button_config.action);
+        }
+        
         let model = App { config };
         
         // Create dynamic UI based on configuration
@@ -101,12 +111,26 @@ impl SimpleComponent for App {
             if key == gdk::Key::Escape {
                 sender_clone.input(AppInput::Quit);
             } else {
-                // Check for keybind matches
-                let key_name = key.name().unwrap_or_default().to_lowercase();
-                for button_config in &config_clone {
-                    if button_config.keybind.to_lowercase() == key_name {
-                        sender_clone.input(AppInput::ExecuteAction(button_config.action.clone()));
-                        break;
+                // Check for keybind matches using keyval
+                let key_char = key.to_unicode();
+                if let Some(ch) = key_char {
+                    let key_str = ch.to_lowercase().to_string();
+                    for button_config in &config_clone {
+                        if button_config.keybind.to_lowercase() == key_str {
+                            println!("Triggered keybind '{}' for action: {}", button_config.keybind, button_config.action);
+                            sender_clone.input(AppInput::ExecuteAction(button_config.action.clone()));
+                            break;
+                        }
+                    }
+                } else {
+                    // 对于非字符键，使用键名匹配
+                    let key_name = key.name().unwrap_or_default().to_lowercase();
+                    for button_config in &config_clone {
+                        if button_config.keybind.to_lowercase() == key_name {
+                            println!("Triggered keybind '{}' for action: {}", button_config.keybind, button_config.action);
+                            sender_clone.input(AppInput::ExecuteAction(button_config.action.clone()));
+                            break;
+                        }
                     }
                 }
             }

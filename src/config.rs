@@ -2,6 +2,7 @@ use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub struct ButtonConfig {
+    #[allow(dead_code)]
     pub label: String,
     pub action: String,
     pub text: String,
