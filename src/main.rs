@@ -135,8 +135,16 @@ impl SimpleComponent for App {
         match message {
             AppInput::ExecuteAction(action) => {
                 match execute_action(&action) {
-                    Ok(_) => println!("Executed: {}", action),
-                    Err(error) => eprintln!("Failed to execute '{}': {}", action, error),
+                    Ok(_) => {
+                        println!("Executed: {}", action);
+                        // 执行命令成功后退出应用
+                        std::process::exit(0);
+                    }
+                    Err(error) => {
+                        eprintln!("Failed to execute '{}': {}", action, error);
+                        // 执行失败也退出应用，避免留在后台
+                        std::process::exit(1);
+                    }
                 }
             }
             AppInput::Quit => {
