@@ -1,16 +1,193 @@
-use glib::{clone};
 use gtk::prelude::*;
-use gtk::{gdk, glib, Application, CssProvider};
+use relm4::prelude::*;
+use gtk::{gdk, glib, CssProvider};
 use gtk4_layer_shell::{Edge, Layer, LayerShell, KeyboardMode};
 use rwlogout::{hibernate, lock, logout, reboot, shutdown, suspend};
 
 const APP_ID: &str = "com.github.rew-shutdown";
 
-fn main() -> glib::ExitCode {
-    let app = Application::builder().application_id(APP_ID).build();
-    app.connect_startup(|_| load_css());
-    app.connect_activate(build_ui);
-    app.run()
+#[derive(Debug)]
+enum AppInput {
+    Logout,
+    Shutdown,
+    Reboot,
+    Hibernate,
+    Suspend,
+    Lock,
+    Quit,
+}
+
+struct App;
+
+#[relm4::component]
+impl SimpleComponent for App {
+    type Init = ();
+    type Input = AppInput;
+    type Output = ();
+    
+    view! {
+        #[root]
+        main_window = gtk::ApplicationWindow {
+            // Initialize layer shell first
+            init_layer_shell: (),
+            set_layer: Layer::Overlay,
+            set_namespace: "logout_dialog",
+            set_keyboard_mode: KeyboardMode::OnDemand,
+            set_anchor: (Edge::Top, true),
+            set_anchor: (Edge::Left, true),
+            set_anchor: (Edge::Bottom, true),
+            set_anchor: (Edge::Right, true),
+            set_exclusive_zone: -1,
+            
+            set_title: Some("shutdown"),
+            set_default_size: (600, 400),
+
+            gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_halign: gtk::Align::Center,
+                set_valign: gtk::Align::Center,
+                set_spacing: 20,
+
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_halign: gtk::Align::Center,
+                    set_spacing: 20,
+
+                    gtk::Button {
+                        set_label: "logout",
+                        add_css_class: "button",
+                        set_size_request: (100, 100),
+                        connect_clicked => AppInput::Logout,
+                    },
+
+                    gtk::Button {
+                        set_label: "shutdown", 
+                        add_css_class: "button",
+                        set_size_request: (100, 100),
+                        connect_clicked => AppInput::Shutdown,
+                    },
+
+                    gtk::Button {
+                        set_label: "reboot",
+                        add_css_class: "button",
+                        set_size_request: (100, 100),
+                        connect_clicked => AppInput::Reboot,
+                    },
+                },
+
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_halign: gtk::Align::Center,
+                    set_spacing: 20,
+
+                    gtk::Button {
+                        set_label: "hibernate",
+                        add_css_class: "button",
+                        set_size_request: (100, 100),
+                        connect_clicked => AppInput::Hibernate,
+                    },
+
+                    gtk::Button {
+                        set_label: "suspend",
+                        add_css_class: "button",
+                        set_size_request: (100, 100),
+                        connect_clicked => AppInput::Suspend,
+                    },
+
+                    gtk::Button {
+                        set_label: "lock",
+                        add_css_class: "button",
+                        set_size_request: (100, 100),
+                        connect_clicked => AppInput::Lock,
+                    },
+                }
+            }
+        }
+    }
+
+    // Initialize the component.
+    fn init(
+        _init: Self::Init,
+        root: Self::Root,
+        sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
+        load_css();
+        
+        let model = App;
+        
+        // Setup key event controller
+        let key_controller = gtk::EventControllerKey::new();
+        let sender_clone = sender.clone();
+        key_controller.connect_key_pressed(move |_, key, _, _| {
+            if key == gdk::Key::Escape {
+                sender_clone.input(AppInput::Quit);
+            }
+            glib::Propagation::Proceed
+        });
+        root.add_controller(key_controller);
+
+        // Setup gesture click controller for background clicks
+        let gesture_click = gtk::GestureClick::new();
+        let sender_clone = sender.clone();
+        gesture_click.connect_released(move |_, _, _, _| {
+            sender_clone.input(AppInput::Quit);
+        });
+        root.add_controller(gesture_click);
+
+        // Insert the code generation of the view! macro here
+        let widgets = view_output!();
+
+        ComponentParts { model, widgets }
+    }
+
+    fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
+        match message {
+            AppInput::Logout => {
+                match logout() {
+                    Ok(_) => println!("Logout, bye!"),
+                    Err(error) => eprintln!("Failed to logout: {}", error),
+                }
+            }
+            AppInput::Shutdown => {
+                match shutdown() {
+                    Ok(_) => println!("Shutting down, bye!"),
+                    Err(error) => eprintln!("Failed to shut down: {}", error),
+                }
+            }
+            AppInput::Reboot => {
+                match reboot() {
+                    Ok(_) => println!("reboot, bye!"),
+                    Err(error) => eprintln!("Failed to reboot: {}", error),
+                }
+            }
+            AppInput::Hibernate => {
+                match hibernate() {
+                    Ok(_) => println!("Hibernate, bye!"),
+                    Err(error) => eprintln!("Failed to hibernate: {}", error),
+                }
+            }
+            AppInput::Suspend => {
+                match suspend() {
+                    Ok(_) => println!("Suspend, bye!"),
+                    Err(error) => eprintln!("Failed to Suspend: {}", error),
+                }
+            }
+            AppInput::Lock => {
+                match lock() {
+                    Ok(_) => println!("Lock,bye!"),
+                    Err(error) => eprintln!("Failed to Lock: {}", error),
+                }
+            }
+            AppInput::Quit => {
+                std::process::exit(0);
+            }
+        }
+    }
+}
+
+fn main() {
+    let app = RelmApp::new(APP_ID);
+    app.run::<App>(());
 }
 
 fn load_css() {
@@ -24,105 +201,4 @@ fn load_css() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
-}
-
-fn set_fullscreen(window: &gtk::ApplicationWindow) {
-    if gtk4_layer_shell::is_supported() {
-        window.init_layer_shell();
-        window.set_layer(Layer::Overlay);
-        window.set_namespace("logout_dialog");
-        window.set_keyboard_mode(KeyboardMode::OnDemand);
-        window.set_anchor(Edge::Top, true);
-        window.set_anchor(Edge::Left, true);
-        window.set_anchor(Edge::Bottom, true);
-        window.set_anchor(Edge::Right, true);
-        window.set_exclusive_zone(-1);
-    } else {
-      window.fullscreen();
-    }
-}
-
-fn build_ui(application: &gtk::Application) {
-    let window = gtk::ApplicationWindow::new(application);
-    window.set_title(Some("shutdown"));
-    window.set_default_size(200, 120);
-
-    // Here we construct the grid that is going contain our buttons.
-    let grid = gtk::Grid::builder()
-        .margin_start(6)
-        .margin_end(6)
-        .margin_top(6)
-        .margin_bottom(6)
-        .halign(gtk::Align::Center)
-        .valign(gtk::Align::Center)
-        .row_spacing(6)
-        .column_spacing(6)
-        .build();
-
-    // Add the grid in the window
-    window.set_child(Some(&grid));
-
-    let button_logout = gtk::Button::with_label("logout");
-    button_logout.connect_clicked(move |_| match logout() {
-        Ok(_) => println!("Logout, bye!"),
-        Err(error) => eprintln!("Failed to logout: {}", error),
-    });
-
-    grid.attach(&button_logout, 0, 0, 1, 1);
-
-    let button_shutdown = gtk::Button::with_label("shutdown");
-    button_shutdown.connect_clicked(move |_| match shutdown() {
-        Ok(_) => println!("Shutting down, bye!"),
-        Err(error) => eprintln!("Failed to shut down: {}", error),
-    });
-
-    grid.attach(&button_shutdown, 1, 0, 1, 1);
-
-    let button_reboot = gtk::Button::with_label("reboot");
-    button_reboot.connect_clicked(move |_| match reboot() {
-        Ok(_) => println!("reboot, bye!"),
-        Err(error) => eprintln!("Failed to reboot: {}", error),
-    });
-
-    grid.attach(&button_reboot, 2, 0, 1, 1);
-
-    let button_hibernate = gtk::Button::with_label("hibernate");
-    button_hibernate.connect_clicked(move |_| match hibernate() {
-        Ok(_) => println!("Hibernate, bye!"),
-        Err(error) => eprintln!("Failed to hibernate: {}", error),
-    });
-    grid.attach(&button_hibernate, 0, 1, 1, 1);
-
-    let button_suspend = gtk::Button::with_label("suspend");
-    button_suspend.connect_clicked(move |_| match suspend() {
-        Ok(_) => println!("Suspend, bye!"),
-        Err(error) => eprintln!("Failed to Suspend: {}", error),
-    });
-    grid.attach(&button_suspend, 1, 1, 1, 1);
-
-    let button_lock = gtk::Button::with_label("lock");
-    button_lock.connect_clicked(move |_| match lock() {
-        Ok(_) => println!("Lock,bye!"),
-        Err(error) => eprintln!("Failed to Lock: {}", error),
-    });
-    grid.attach(&button_lock, 2, 1, 1, 1);
-
-    set_fullscreen(&window);
-
-    let key_controller = gtk::EventControllerKey::new();
-    key_controller.connect_key_pressed(move |_, key, _, _| {
-        if key == gdk::Key::Escape {
-            std::process::exit(0);
-        }
-        glib::Propagation::Proceed
-    });
-    window.add_controller(key_controller);
-
-    let gesture_click = gtk::GestureClick::new();
-    gesture_click.connect_released(move |_, _, _, _| {
-        std::process::exit(0);
-    });
-    window.add_controller(gesture_click);
-
-    window.present();
 }
