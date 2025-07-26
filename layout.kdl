@@ -1,0 +1,38 @@
+// Layout configuration for rwlogout
+// Each button is defined with its properties
+
+button "lock" {
+    action "loginctl lock-session"
+    text "Lock"
+    keybind "l"
+}
+
+button "hibernate" {
+    action "systemctl hibernate"
+    text "Hibernate"
+    keybind "h"
+}
+
+button "logout" {
+    action "loginctl terminate-user $USER"
+    text "Logout"
+    keybind "e"
+}
+
+button "shutdown" {
+    action "systemctl poweroff"
+    text "Shutdown"
+    keybind "s"
+}
+
+button "suspend" {
+    action "systemctl suspend"
+    text "Suspend"
+    keybind "u"
+}
+
+button "reboot" {
+    action "systemctl reboot"
+    text "Reboot"
+    keybind "r"
+}

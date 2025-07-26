@@ -1,23 +1,22 @@
+mod config;
+
 use gtk::prelude::*;
 use relm4::prelude::*;
 use gtk::{gdk, glib, CssProvider};
 use gtk4_layer_shell::{Edge, Layer, LayerShell, KeyboardMode};
-use rwlogout::{hibernate, lock, logout, reboot, shutdown, suspend};
+use config::{Config, execute_action};
 
 const APP_ID: &str = "com.github.rew-shutdown";
 
 #[derive(Debug)]
 enum AppInput {
-    Logout,
-    Shutdown,
-    Reboot,
-    Hibernate,
-    Suspend,
-    Lock,
+    ExecuteAction(String),
     Quit,
 }
 
-struct App;
+struct App {
+    config: Config,
+}
 
 #[relm4::component]
 impl SimpleComponent for App {
@@ -41,67 +40,6 @@ impl SimpleComponent for App {
             
             set_title: Some("shutdown"),
             set_default_size: (600, 400),
-
-            gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
-                set_halign: gtk::Align::Center,
-                set_valign: gtk::Align::Center,
-                set_spacing: 20,
-
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_halign: gtk::Align::Center,
-                    set_spacing: 20,
-
-                    gtk::Button {
-                        set_label: "logout",
-                        add_css_class: "button",
-                        set_size_request: (100, 100),
-                        connect_clicked => AppInput::Logout,
-                    },
-
-                    gtk::Button {
-                        set_label: "shutdown", 
-                        add_css_class: "button",
-                        set_size_request: (100, 100),
-                        connect_clicked => AppInput::Shutdown,
-                    },
-
-                    gtk::Button {
-                        set_label: "reboot",
-                        add_css_class: "button",
-                        set_size_request: (100, 100),
-                        connect_clicked => AppInput::Reboot,
-                    },
-                },
-
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Horizontal,
-                    set_halign: gtk::Align::Center,
-                    set_spacing: 20,
-
-                    gtk::Button {
-                        set_label: "hibernate",
-                        add_css_class: "button",
-                        set_size_request: (100, 100),
-                        connect_clicked => AppInput::Hibernate,
-                    },
-
-                    gtk::Button {
-                        set_label: "suspend",
-                        add_css_class: "button",
-                        set_size_request: (100, 100),
-                        connect_clicked => AppInput::Suspend,
-                    },
-
-                    gtk::Button {
-                        set_label: "lock",
-                        add_css_class: "button",
-                        set_size_request: (100, 100),
-                        connect_clicked => AppInput::Lock,
-                    },
-                }
-            }
         }
     }
 
@@ -113,14 +51,64 @@ impl SimpleComponent for App {
     ) -> ComponentParts<Self> {
         load_css();
         
-        let model = App;
+        // Load configuration
+        let config = Config::load_from_kdl().expect("Failed to load configuration");
+        let model = App { config };
+        
+        // Create dynamic UI based on configuration
+        let main_box = gtk::Box::new(gtk::Orientation::Vertical, 20);
+        main_box.set_halign(gtk::Align::Center);
+        main_box.set_valign(gtk::Align::Center);
+        
+        // Create rows of buttons (3 buttons per row)
+        let mut current_row: Option<gtk::Box> = None;
+        let mut button_count = 0;
+        
+        for button_config in &model.config.buttons {
+            // Create new row if needed
+            if button_count % 3 == 0 {
+                let row = gtk::Box::new(gtk::Orientation::Horizontal, 20);
+                row.set_halign(gtk::Align::Center);
+                main_box.append(&row);
+                current_row = Some(row);
+            }
+            
+            if let Some(ref row) = current_row {
+                let button = gtk::Button::with_label(&button_config.text);
+                button.add_css_class("button");
+                button.set_size_request(100, 100);
+                button.set_can_focus(true);
+                
+                // Clone action for the closure
+                let action = button_config.action.clone();
+                let sender_clone = sender.clone();
+                button.connect_clicked(move |_| {
+                    sender_clone.input(AppInput::ExecuteAction(action.clone()));
+                });
+                
+                row.append(&button);
+                button_count += 1;
+            }
+        }
+        
+        root.set_child(Some(&main_box));
         
         // Setup key event controller
         let key_controller = gtk::EventControllerKey::new();
         let sender_clone = sender.clone();
+        let config_clone = model.config.buttons.clone();
         key_controller.connect_key_pressed(move |_, key, _, _| {
             if key == gdk::Key::Escape {
                 sender_clone.input(AppInput::Quit);
+            } else {
+                // Check for keybind matches
+                let key_name = key.name().unwrap_or_default().to_lowercase();
+                for button_config in &config_clone {
+                    if button_config.keybind.to_lowercase() == key_name {
+                        sender_clone.input(AppInput::ExecuteAction(button_config.action.clone()));
+                        break;
+                    }
+                }
             }
             glib::Propagation::Proceed
         });
@@ -134,7 +122,10 @@ impl SimpleComponent for App {
         });
         root.add_controller(gesture_click);
 
-        // Insert the code generation of the view! macro here
+        // Setup hover focus for all buttons
+        setup_button_hover_focus(&root);
+
+        // Create empty widgets for compatibility
         let widgets = view_output!();
 
         ComponentParts { model, widgets }
@@ -142,40 +133,10 @@ impl SimpleComponent for App {
 
     fn update(&mut self, message: Self::Input, _sender: ComponentSender<Self>) {
         match message {
-            AppInput::Logout => {
-                match logout() {
-                    Ok(_) => println!("Logout, bye!"),
-                    Err(error) => eprintln!("Failed to logout: {}", error),
-                }
-            }
-            AppInput::Shutdown => {
-                match shutdown() {
-                    Ok(_) => println!("Shutting down, bye!"),
-                    Err(error) => eprintln!("Failed to shut down: {}", error),
-                }
-            }
-            AppInput::Reboot => {
-                match reboot() {
-                    Ok(_) => println!("reboot, bye!"),
-                    Err(error) => eprintln!("Failed to reboot: {}", error),
-                }
-            }
-            AppInput::Hibernate => {
-                match hibernate() {
-                    Ok(_) => println!("Hibernate, bye!"),
-                    Err(error) => eprintln!("Failed to hibernate: {}", error),
-                }
-            }
-            AppInput::Suspend => {
-                match suspend() {
-                    Ok(_) => println!("Suspend, bye!"),
-                    Err(error) => eprintln!("Failed to Suspend: {}", error),
-                }
-            }
-            AppInput::Lock => {
-                match lock() {
-                    Ok(_) => println!("Lock,bye!"),
-                    Err(error) => eprintln!("Failed to Lock: {}", error),
+            AppInput::ExecuteAction(action) => {
+                match execute_action(&action) {
+                    Ok(_) => println!("Executed: {}", action),
+                    Err(error) => eprintln!("Failed to execute '{}': {}", action, error),
                 }
             }
             AppInput::Quit => {
@@ -201,4 +162,29 @@ fn load_css() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+}
+
+fn setup_button_hover_focus(window: &gtk::ApplicationWindow) {
+    // 递归查找所有按钮并添加 hover 事件
+    fn find_and_setup_buttons(widget: &gtk::Widget) {
+        if let Some(button) = widget.downcast_ref::<gtk::Button>() {
+            let motion_controller = gtk::EventControllerMotion::new();
+            let button_clone = button.clone();
+            motion_controller.connect_enter(move |_, _, _| {
+                button_clone.grab_focus();
+            });
+            button.add_controller(motion_controller);
+        }
+        
+        // 如果是容器，递归处理其子组件  
+        if let Some(container) = widget.downcast_ref::<gtk::Box>() {
+            let mut child = container.first_child();
+            while let Some(widget) = child {
+                find_and_setup_buttons(&widget);
+                child = widget.next_sibling();
+            }
+        }
+    }
+    
+    find_and_setup_buttons(window.upcast_ref::<gtk::Widget>());
 }
